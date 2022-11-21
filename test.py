@@ -2,6 +2,7 @@
 TODO: Finish this file
 """
 
+import argparse
 import numpy as np
 import time
 from gym.wrappers.monitoring import video_recorder
@@ -9,6 +10,15 @@ from tqdm import tqdm
 import gym 
 
 seed = 5
+
+def parse():
+    parser = argparse.ArgumentParser(description="DS595/CS525 RL PRoject4")
+    parser.add_argument('--env_name', default=None, help='environment name')
+    parser.add_argument('--train_dqn', action='store_true', help='whether train DQN')
+    parser.add_argument('--test_dqn', action='store_true', help='whether test DQN')
+    parser.add_argument('--train_from_save', action='store_true', help='whether training from save DQN')
+    args = parser.parse_args()
+    return args
 
 def test(agent, env, total_episodes=30, record_video=False):
     rewards = []
@@ -65,4 +75,5 @@ def run(args):
     test(agent, env, total_episodes=10, record_video=True)
 
 if __name__ == '__main__':
-    run()
+    args = parse()
+    run(args)
