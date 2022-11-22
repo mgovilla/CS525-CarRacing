@@ -14,6 +14,8 @@ import torch.optim as optim
 
 from .agent import Agent
 from .dqn_model import DQN
+from .dqn_model import DUELING_DQN
+
 """
 you can import any package and define any extra function as you need
 """
@@ -26,8 +28,8 @@ class Agent_DQN(Agent):
     def __init__(self, env, args):
         """
         Initialize everything you need here.
-        For example: 
-            paramters for neural network  
+        For example:
+            paramters for neural network
             initialize Q net and target Q net
             parameters for replay buffer
             parameters for q-learning; decaying epsilon-greedy
@@ -50,17 +52,17 @@ class Agent_DQN(Agent):
             map_location = None if torch.cuda.is_available() else torch.device('cpu')
             self.policy_net = torch.load(f="trained_policy_final.pth", map_location=map_location)
             self.policy_net.device = self.device
-            
+
             # epsilon
             self.epsilon = 0.025
             self.decay_rate = 0
 
             # create replay buffer
             self.buffer = deque(maxlen=10000)
-            self.batch_size = 64 
+            self.batch_size = 64
 
             self.init_random_frames = 0
-        else: 
+        else:
             # create the nn model
             self.policy_net = DQN(*env.observation_space.shape,
                                 env.action_space.n, device=self.device)
@@ -69,12 +71,12 @@ class Agent_DQN(Agent):
             # epsilon
             self.epsilon = 1.0
             self.epsilon_max_frames = 500000
-            
+
             self.decay_rate = (self.epsilon - 0.025) / (self.epsilon_max_frames)
-            
+
             # create replay buffer
             self.buffer = deque(maxlen=10000)
-            self.batch_size = 32 
+            self.batch_size = 32
             self.init_random_frames = 2500
 
         self.target_net = DQN(*env.observation_space.shape,
@@ -88,7 +90,7 @@ class Agent_DQN(Agent):
         self.UPDATE_TARGET_FREQ = 2500
         self.gamma = 0.99
         self.max_frames = 1000000
-        
+
         # perform gradient descent every
         self.update_model = 4
 
@@ -100,7 +102,7 @@ class Agent_DQN(Agent):
         Initialize the replay buffer with some random frames
         """
 
-    def make_action_test(self, observation): 
+    def make_action_test(self, observation):
         with torch.no_grad():
             # get max reward action
             actions = self.policy_net(torch.tensor(np.array([observation.transpose()]), device=self.device, dtype=torch.float))
@@ -133,7 +135,7 @@ class Agent_DQN(Agent):
         return torch.tensor([[random.randrange(self.env.action_space.n)]], device=self.device, dtype=torch.long)
 
     def push(self, sars: Tuple):
-        """ You can add additional arguments as you need. 
+        """ You can add additional arguments as you need.
         Push new data to buffer and remove the old one if the buffer is full.
 
         Hints:
@@ -191,7 +193,7 @@ class Agent_DQN(Agent):
             play a step in the game using the policy net
             record the step into the buffer
 
-            sample from the buffer 
+            sample from the buffer
             compute the reward based on the target_net
 
             update the policy_net using a loss function (single step) on the reward
@@ -217,12 +219,12 @@ class Agent_DQN(Agent):
             frames += 1
 
             # play a step in the game based on the policy net
-            next_state, reward, done, _, _ = self.env.step(action.item())
+            next_state, reward, done, *_ = self.env.step(action.item())
             next_state = np.array(next_state)
             total_reward += reward
             # record (s, a, r, s')
             self.push(
-                (torch.tensor(np.array([state.transpose()]), device=self.device, dtype=torch.float), 
+                (torch.tensor(np.array([state.transpose()]), device=self.device, dtype=torch.float),
                 action,
                 torch.tensor([reward], device=self.device, dtype=torch.float),
                 torch.tensor(np.array([next_state.transpose()]), device=self.device, dtype=torch.float) if not done else None))
