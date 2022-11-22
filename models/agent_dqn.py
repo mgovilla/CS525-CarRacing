@@ -12,8 +12,8 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-from agent import Agent
-from dqn_model import DQN
+from .agent import Agent
+from .dqn_model import DQN
 """
 you can import any package and define any extra function as you need
 """
@@ -29,7 +29,7 @@ class Agent_DQN(Agent):
         For example: 
             paramters for neural network  
             initialize Q net and target Q net
-            parameters for repaly buffer
+            parameters for replay buffer
             parameters for q-learning; decaying epsilon-greedy
             ...
         """
@@ -62,23 +62,23 @@ class Agent_DQN(Agent):
             self.init_random_frames = 0
         else: 
             # create the nn model
-            self.policy_net = DQN(*env.get_observation_space().shape,
-                                env.get_action_space().n, device=self.device)
+            self.policy_net = DQN(*env.observation_space.shape,
+                                env.action_space.n, device=self.device)
             self.policy_net.to(self.device)
 
             # epsilon
             self.epsilon = 1.0
-            self.epsilon_max_frames = 250000
+            self.epsilon_max_frames = 500000
             
             self.decay_rate = (self.epsilon - 0.025) / (self.epsilon_max_frames)
             
             # create replay buffer
-            self.buffer = deque(maxlen=100000)
-            self.batch_size = 64 
-            self.init_random_frames = 25000 
+            self.buffer = deque(maxlen=10000)
+            self.batch_size = 32 
+            self.init_random_frames = 2500
 
-        self.target_net = DQN(*env.get_observation_space().shape,
-                              env.get_action_space().n, device=self.device)
+        self.target_net = DQN(*env.observation_space.shape,
+                              env.action_space.n, device=self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.to(self.device)
         self.target_net.eval()
@@ -130,7 +130,7 @@ class Agent_DQN(Agent):
                 actions = self.policy_net(torch.tensor(np.array([observation.transpose()]), device=self.device, dtype=torch.float))
                 return actions.max(1)[1].view(1, 1)
 
-        return torch.tensor([[random.randrange(self.env.get_action_space().n)]], device=self.device, dtype=torch.long)
+        return torch.tensor([[random.randrange(self.env.action_space.n)]], device=self.device, dtype=torch.long)
 
     def push(self, sars: Tuple):
         """ You can add additional arguments as you need. 
@@ -198,12 +198,14 @@ class Agent_DQN(Agent):
             every C iterations, set target_net = policy_net
         """
 
+        rewards_file = open("rewards.out", "w")
         optimizer = optim.Adam(self.policy_net.parameters(), lr=0.00001)
-        episode_rewards, frames, total_reward, done = [], 0, 0, True
+        frames, total_reward, done = 0, 0, True
         while frames < self.max_frames:
             if done:
                 state = self.env.reset()
-                episode_rewards.append(total_reward)
+                state = np.array(state[0])
+                rewards_file.write(f'{total_reward}\n')
                 total_reward = 0
 
             # decay epsilon after the initial period
@@ -216,6 +218,7 @@ class Agent_DQN(Agent):
 
             # play a step in the game based on the policy net
             next_state, reward, done, _, _ = self.env.step(action.item())
+            next_state = np.array(next_state)
             total_reward += reward
             # record (s, a, r, s')
             self.push(
@@ -237,9 +240,9 @@ class Agent_DQN(Agent):
                 # episode_rewards = []
                 # print('epsilon: ', self.epsilon)
                 # print('replay memory size: ', len(self.buffer))
+                rewards_file.flush()
                 self.target_net.load_state_dict(self.policy_net.state_dict())
-                torch.save(self.policy_net, f"trained_3/trained_policy_{frames}.pth")
+                torch.save(self.policy_net, f"trained_1/trained_policy_{frames}.pth")
 
-        print(episode_rewards)
         print(frames)
         torch.save(self.policy_net, "trained_policy_final_p2.pth")
