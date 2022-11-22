@@ -1,1 +1,4 @@
 venv/
+trained_*/
+*.pyc
+.vscode

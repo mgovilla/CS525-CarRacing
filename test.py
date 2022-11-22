@@ -22,7 +22,7 @@ def parse():
 
 def test(agent, env, total_episodes=30, record_video=False):
     rewards = []
-    env.seed(seed)
+    # env.seed(seed)
     if record_video:
         vid = video_recorder.VideoRecorder(env=env.env, path="test_vid.mp4")
     start_time = time.time()
@@ -31,6 +31,7 @@ def test(agent, env, total_episodes=30, record_video=False):
         state = env.reset()
         agent.init_game_setting()
         episode_reward = 0.0
+        state = np.array(state[0])
 
         #playing one game
         #frames = [state]
@@ -39,6 +40,7 @@ def test(agent, env, total_episodes=30, record_video=False):
             frames += 1
             action = agent.make_action(state, test=True)
             state, reward, terminated, truncated, _ = env.step(action)
+            state = np.array(state)
             episode_reward += reward
             #frames.append(state)
             if record_video:
@@ -69,10 +71,10 @@ def run(args):
 
     record_video: (bool) whether you need to record video
     '''
-    env = gym.make("CarRacing-v2", continuous=False)
+    env = gym.make("CarRacing-v2", continuous=False, render_mode="rgb_array")
     from models.agent_dqn import Agent_DQN
     agent = Agent_DQN(env, args)
-    test(agent, env, total_episodes=10, record_video=True)
+    test(agent, env, total_episodes=1, record_video=True)
 
 if __name__ == '__main__':
     args = parse()
