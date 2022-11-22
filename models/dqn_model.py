@@ -67,7 +67,7 @@ class DQN(nn.Module):
         x = F.relu(self.fc1(x))
         return self.fc2(x)
 
-class DQN(nn.Module):
+class DUELING_DQN(nn.Module):
     """Initialize a deep Q-learning network
     Hints:
     -----
