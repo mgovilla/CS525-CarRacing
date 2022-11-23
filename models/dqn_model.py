@@ -45,7 +45,7 @@ class DQN(nn.Module):
         conv3_w = (conv2_w - 3) + 1
         conv3_h = (conv2_h - 3) + 1
 
-        self.fc1 = nn.Linear(conv_w*conv_h*64, 512)
+        self.fc1 = nn.Linear(conv3_w*conv3_h*64, 512)
         self.fc2 = nn.Linear(512, self.num_actions)
         self.flatten = nn.Flatten()
         # TODO try maxpooling layer between convolutions
@@ -109,8 +109,8 @@ class DUELING_DQN(nn.Module):
         conv3_w = (conv2_w - 3) + 1
         conv3_h = (conv2_h - 3) + 1
 
-        self.fc1_adv = nn.Linear(conv_w*conv_h*64, 512)
-        self.fc1_val = nn.Linear(conv_w*conv_h*64, 512)
+        self.fc1_adv = nn.Linear(conv3_w*conv3_h*64, 512)
+        self.fc1_val = nn.Linear(conv3_w*conv3_h*64, 512)
 
         self.fc2_adv = nn.Linear(512, self.num_actions)
         self.fc2_val = nn.Linear(512, 1)
