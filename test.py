@@ -71,7 +71,7 @@ def run(args):
 
     record_video: (bool) whether you need to record video
     '''
-    env = gym.make("CarRacing-v2", continuous=False, render_mode="rgb_array")
+    env = gym.make("CarRacing-v2", continuous=False, new_step_api=True, render_mode="rgb_array")
     from models.agent_dqn import Agent_DQN
     agent = Agent_DQN(env, args)
     test(agent, env, total_episodes=1, record_video=True)
