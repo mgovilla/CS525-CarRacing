@@ -13,7 +13,7 @@ class DQN(nn.Module):
     This is just a hint. You can build your own structure.
     """
 
-    def __init__(self, in_size_w, in_size_h, in_channels=4, num_actions=4, device="cpu"):
+    def __init__(self, in_size_w, in_size_h, in_channels, num_actions, device="cpu"):
         """
         Parameters:
         -----------
@@ -50,6 +50,7 @@ class DQN(nn.Module):
         self.flatten = nn.Flatten()
         # TODO try maxpooling layer between convolutions
         # self.maxpool = nn.MaxPool2d(kernel_size= , stride= , padding= , )
+        # TODO try using Dropout layers as well
 
     def forward(self, x):
         """
@@ -76,7 +77,7 @@ class DUELING_DQN(nn.Module):
     This is just a hint. You can build your own structure.
     """
 
-    def __init__(self, in_size_w, in_size_h, in_channels=4, num_actions=4, device="cpu"):
+    def __init__(self, in_size_w, in_size_h, in_channels, num_actions, device="cpu"):
         """
         Parameters:
         -----------
