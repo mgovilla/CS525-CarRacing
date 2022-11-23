@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from itertools import count
 import random
 from typing import Tuple
 import numpy as np
-from collections import defaultdict, deque
-import os
-import sys
+import numpy.typing as npt
+from collections import deque
+
+import cv2
 
 import torch
 import torch.nn.functional as F
@@ -206,7 +206,6 @@ class Agent_DQN(Agent):
         while frames < self.max_frames:
             if done:
                 state = self.env.reset()
-                state = np.array(state[0])
                 rewards_file.write(f'{total_reward}\n')
                 total_reward = 0
 
@@ -220,7 +219,6 @@ class Agent_DQN(Agent):
 
             # play a step in the game based on the policy net
             next_state, reward, done, *_ = self.env.step(action.item())
-            next_state = np.array(next_state)
             total_reward += reward
             # record (s, a, r, s')
             self.push(
@@ -228,7 +226,6 @@ class Agent_DQN(Agent):
                 action,
                 torch.tensor([reward], device=self.device, dtype=torch.float),
                 torch.tensor(np.array([next_state.transpose()]), device=self.device, dtype=torch.float) if not done else None))
-
 
             state = next_state
 
@@ -244,7 +241,7 @@ class Agent_DQN(Agent):
                 # print('replay memory size: ', len(self.buffer))
                 rewards_file.flush()
                 self.target_net.load_state_dict(self.policy_net.state_dict())
-                torch.save(self.policy_net, f"trained_1/trained_policy_{frames}.pth")
+                torch.save(self.policy_net, f"trained_2/trained_policy_{frames}.pth")
 
         print(frames)
-        torch.save(self.policy_net, "trained_policy_final_p2.pth")
+        torch.save(self.policy_net, "trained_policy_final.pth")

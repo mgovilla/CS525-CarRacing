@@ -71,7 +71,7 @@ class MaxAndSkipEnv(gym.Wrapper):
         return self.env.reset(**kwargs)
 
 
-class FrameStack(gym.Wrapper):
+class FrameStackEnv(gym.Wrapper):
     def __init__(self, env, k):
         """Stack k last frames."""
         gym.Wrapper.__init__(self, env)
@@ -100,6 +100,51 @@ class FrameStack(gym.Wrapper):
         assert len(self.frames) == self.k
         return np.concatenate(self.frames, axis=2)
 
+class GrayscaleEnv(gym.Wrapper):
+    def __init__(self, env, crop):
+        """Convert Frames to Grayscale"""
+        gym.Wrapper.__init__(self, env)
+        self.crop = crop
+        shp = env.observation_space.shape
+        self.observation_space = spaces.Box(
+            low=0,
+            high=255,
+            shape=(84 if self.crop else shp[0], shp[1], shp[2] // 3),
+            dtype=env.observation_space.dtype,
+        )
+
+    def reset(self, **kwargs):
+        state = self.env.reset(**kwargs)
+        return self.process_observation(state)
+
+    def step(self, action):
+        ob, reward, done, truncated, info = self.env.step(action)
+        gray = self.process_observation(ob)
+        return gray, reward, done, truncated, info
+
+    """
+    Process a given observation - expected to be (96, 96, 3n)
+    and output a grayscale version (96, 96, n)
+
+    options:
+    crop the bottom cut off (84, 96, n)
+
+    """
+    def process_observation(self, observation, crop=False, randomized=False):
+        output = []
+        for i in range(observation.shape[-1] // 3):
+            # convert to grayscale
+            temp = cv2.cvtColor(observation[:, :, 3*i:3*(i+1)], cv2.COLOR_RGB2GRAY)
+            if crop:
+                temp = temp[0:84, :]
+
+            output.append(temp)
+
+        # threshold the image to turn all the grass into white
+        # _, output = cv2.threshold(output, 127, 255, cv2.THRESH_BINARY)
+        # output = cv2.GaussianBlur(output, (5,5), 0)
+        return np.stack(output, axis=-1)
+
 
 class EarlyStopEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):
@@ -121,7 +166,7 @@ class EarlyStopEnv(gym.Wrapper):
         ob, reward, done, truncated, info = self.env.step(action)
         if self.noop_frames >= self.noop_max:
             self.noop_frames = 0
-            ob = env.reset()
+            ob = self.env.reset()
         else:
             self.noop_frames += 1
 
@@ -140,7 +185,7 @@ class ScaledFloatFrame(gym.ObservationWrapper):
         return np.array(observation).astype(np.float32) / 255.0
 
 
-def wrap_deepmind(env, dim=84, clip_rewards=True, framestack=True, scale=False):
+def wrap_deepmind(env, dim=84, clip_rewards=True, framestack=True, gray=True, crop=False, scale=False):
     """Configure environment for DeepMind-style Atari.
     Note that we assume reward clipping is done outside the wrapper.
     Args:
@@ -155,12 +200,14 @@ def wrap_deepmind(env, dim=84, clip_rewards=True, framestack=True, scale=False):
         env = ScaledFloatFrame(env)  # TODO: use for dqn?
     if clip_rewards is True:
         env = ClipRewardEnv(env)  # reward clipping is handled by policy eval
+    if gray:
+        env = GrayscaleEnv(env, crop)
     # 4x image framestacking.
     if framestack is True:
-        env = FrameStack(env, 4)
+        env = FrameStackEnv(env, 4)
     return env
 
 
 def make_wrap_box2d(env_id='CarRacing-v2', clip_rewards=True, continuous=False):
     env = gym.make(env_id, new_step_api=True, continuous=continuous)
-    return wrap_deepmind(env, dim=96, clip_rewards=clip_rewards, framestack=True, scale=False)
+    return wrap_deepmind(env, dim=96, clip_rewards=clip_rewards, framestack=True, gray=False, crop=False, scale=False)
