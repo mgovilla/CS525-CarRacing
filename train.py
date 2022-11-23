@@ -16,7 +16,7 @@ def parse():
 if __name__ == '__main__':
     args = parse()
     start_time = time.time()
-    env = gym.make("CarRacing-v2", continuous=False)
+    env = make_wrap_box2d()
     from models.agent_dqn import Agent_DQN
     agent = Agent_DQN(env, args)
     agent.train()
