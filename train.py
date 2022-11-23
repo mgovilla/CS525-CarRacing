@@ -3,6 +3,7 @@ import argparse
 from test import test
 import time
 import gym
+from box2d_wrapper import make_wrap_box2d
 
 def parse():
     parser = argparse.ArgumentParser(description="DS595/CS525 RL PRoject4")
@@ -21,4 +22,3 @@ if __name__ == '__main__':
     agent = Agent_DQN(env, args)
     agent.train()
     print('running time:',time.time()-start_time)
-
