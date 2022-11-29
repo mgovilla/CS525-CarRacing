@@ -7,7 +7,9 @@ import numpy as np
 import time
 from gym.wrappers.monitoring import video_recorder
 from tqdm import tqdm
-import gym 
+import gym
+
+from box2d_wrapper import make_wrap_box2d 
 
 seed = 5
 
@@ -31,7 +33,6 @@ def test(agent, env, total_episodes=30, record_video=False):
         state = env.reset()
         agent.init_game_setting()
         episode_reward = 0.0
-        state = np.array(state[0])
 
         #playing one game
         #frames = [state]
@@ -71,7 +72,7 @@ def run(args):
 
     record_video: (bool) whether you need to record video
     '''
-    env = gym.make("CarRacing-v2", continuous=False, new_step_api=True, render_mode="rgb_array")
+    env = make_wrap_box2d()
     from models.agent_dqn import Agent_DQN
     agent = Agent_DQN(env, args)
     test(agent, env, total_episodes=1, record_video=True)

@@ -33,7 +33,7 @@ def get_wrapper_by_cls(env, cls):
 
 class ClipRewardEnv(gym.RewardWrapper):
     def __init__(self, env):
-        gym.RewardWrapper.__init__(self, env)
+        gym.RewardWrapper.__init__(self, env, new_step_api=True)
 
     def reward(self, reward):
         """Bin reward to {+1, 0, -1} by its sign."""
@@ -43,7 +43,7 @@ class ClipRewardEnv(gym.RewardWrapper):
 class MaxAndSkipEnv(gym.Wrapper):
     def __init__(self, env, skip=4):
         """Return only every `skip`-th frame"""
-        gym.Wrapper.__init__(self, env)
+        gym.Wrapper.__init__(self, env, new_step_api=True)
         # most recent raw observations (for max pooling across time steps)
         self._obs_buffer = np.zeros((2,) + env.observation_space.shape, dtype=np.uint8)
         self._skip = skip
@@ -74,7 +74,7 @@ class MaxAndSkipEnv(gym.Wrapper):
 class FrameStackEnv(gym.Wrapper):
     def __init__(self, env, k):
         """Stack k last frames."""
-        gym.Wrapper.__init__(self, env)
+        gym.Wrapper.__init__(self, env, new_step_api=True)
         self.k = k
         self.frames = deque([], maxlen=k)
         shp = env.observation_space.shape
@@ -103,7 +103,7 @@ class FrameStackEnv(gym.Wrapper):
 class GrayscaleEnv(gym.Wrapper):
     def __init__(self, env, crop):
         """Convert Frames to Grayscale"""
-        gym.Wrapper.__init__(self, env)
+        gym.Wrapper.__init__(self, env, new_step_api=True)
         self.crop = crop
         shp = env.observation_space.shape
         self.observation_space = spaces.Box(
@@ -148,7 +148,7 @@ class GrayscaleEnv(gym.Wrapper):
 
 class EarlyStopEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):
-        gym.Wrapper.__init__(self, env)
+        gym.Wrapper.__init__(self, env, new_step_api=True)
         shp = env.observation_space.shape
         self.observation_space = gym.spaces.Box(
             low=0, high=255, shape=shp, dtype=env.observation_space.dtype
@@ -193,7 +193,7 @@ def wrap_deepmind(env, dim=84, clip_rewards=True, framestack=True, gray=True, cr
         dim: Dimension to resize observations to (dim x dim).
         framestack: Whether to framestack observations.
     """
-    env = EarlyStopEnv(env, noop_max=30)
+    # env = EarlyStopEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
 
     if scale is True:
