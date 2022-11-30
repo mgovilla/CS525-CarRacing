@@ -147,6 +147,29 @@ class GrayscaleEnv(gym.Wrapper):
 
 
 class EarlyStopEnv(gym.Wrapper):
+    def __init__(self, env, max_neg_rewards=100):
+        super().__init__(env, new_step_api=True)
+        self.max_neg_rewards = max_neg_rewards
+        self.episode_length, self.negative_reward_ct = 0, 0
+    
+    def reset(self, **kwargs):
+        self.episode_length, self.negative_reward_ct = 0, 0
+        return super().reset(**kwargs)
+
+    def step(self, action):
+        ob, reward, done, truncated, info = self.env.step(action)
+        self.episode_length += 1
+        if reward < 0 and self.episode_length > 10:
+            self.negative_reward_ct += 1
+            done = (self.negative_reward_ct > self.max_neg_rewards)
+            reward += -20.0 if done else 0.0
+            if done:
+                pass
+                # print("EarlyStopEnv: early stopping")
+
+        return ob, reward, done, truncated, info
+
+class NoopMaxEnv(gym.Wrapper):
     def __init__(self, env, noop_max=30):
         gym.Wrapper.__init__(self, env, new_step_api=True)
         shp = env.observation_space.shape
@@ -193,8 +216,9 @@ def wrap_deepmind(env, dim=84, clip_rewards=True, framestack=True, gray=True, cr
         dim: Dimension to resize observations to (dim x dim).
         framestack: Whether to framestack observations.
     """
-    # env = EarlyStopEnv(env, noop_max=30)
+    # env = NoopMaxEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
+    env = EarlyStopEnv(env)
 
     if scale is True:
         env = ScaledFloatFrame(env)  # TODO: use for dqn?
