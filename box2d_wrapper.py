@@ -166,7 +166,9 @@ class EarlyStopEnv(gym.Wrapper):
             if done:
                 pass
                 # print("EarlyStopEnv: early stopping")
-
+        else:
+            self.negative_reward_ct = 0
+            
         return ob, reward, done, truncated, info
 
 class NoopMaxEnv(gym.Wrapper):
