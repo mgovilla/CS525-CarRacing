@@ -79,6 +79,8 @@ class Agent_DQN(Agent):
             self.batch_size = 32
             self.init_random_frames = 2500
 
+        self.double = False
+
         self.target_net = DQN(*env.observation_space.shape,
                               env.action_space.n, device=self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
@@ -106,6 +108,9 @@ class Agent_DQN(Agent):
         with torch.no_grad():
             # get max reward action
             actions = self.policy_net(torch.tensor(np.array([observation.transpose()]), device=self.device, dtype=torch.float))
+            # if double DQN greedy action is sum of policy_ney and target_net action
+            if self.double:
+                actions = actions + self.target_net(torch.tensor(np.array([observation.transpose()]), device=self.device, dtype=torch.float))
             a = actions.max(1)[1].view(1, 1).item()
             # print(a, actions)
             return a
@@ -168,12 +173,23 @@ class Agent_DQN(Agent):
         action_batch = torch.cat(batch[1]).to(self.device)
         reward_batch = torch.cat(batch[2]).to(self.device)
 
-        state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+        # double DQN
+        if self.double:
+            if random.choice([0,1]):
+                best_next_actions = torch.argmax(self.policy_net(non_final_next_states), dim=1)
+                expected_state_action_values = reward_batch + (self.gamma * self.target_net(non_final_next_states).gather(1, best_next_actions))
+                state_action_values = self.policy_net(state_batch).gather(1, action_batch)
+            else:
+                best_next_actions = torch.argmax(self.target_net(non_final_next_states), dim=1)
+                expected_state_action_values = reward_batch + (self.gamma * self.policy_net(non_final_next_states).gather(1, best_next_actions))
+                state_action_values = self.target_net(state_batch).gather(1, action_batch)
+        else:
+            state_action_values = self.policy_net(state_batch).gather(1, action_batch)
 
-        next_state_values = torch.zeros(self.batch_size, device=self.device)
-        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
-        # Compute the expected Q values
-        expected_state_action_values = (next_state_values * self.gamma) + reward_batch
+            next_state_values = torch.zeros(self.batch_size, device=self.device)
+            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
+            # Compute the expected Q values
+            expected_state_action_values = (next_state_values * self.gamma) + reward_batch
 
         # Compute Huber loss
         criterion = torch.nn.SmoothL1Loss()
