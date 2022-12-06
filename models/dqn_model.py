@@ -88,7 +88,7 @@ class DUELING_DQN(nn.Module):
         In the constructor we instantiate modules and assign them as
         member variables.
         """
-        super(DQN, self).__init__()
+        super(DUELING_DQN, self).__init__()
         self.device = device
 
         # input arguments
@@ -132,8 +132,8 @@ class DUELING_DQN(nn.Module):
         x = F.relu(self.conv3(x))
         x = self.flatten(x) # flatten
 
-        adv = self.relu(self.fc1_adv(x))
-        val = self.relu(self.fc1_val(x))
+        adv = F.relu(self.fc1_adv(x))
+        val = F.relu(self.fc1_val(x))
 
         # output layer: fully connected
         adv = self.fc2_adv(adv)
