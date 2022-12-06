@@ -27,7 +27,7 @@ np.random.seed(595)
 random.seed(595)
 
 TIME_STEPS = 1000000
-BATCH_SIZE = 4800
+BATCH_SIZE = 200
 GAMMA = 0.99
 EPSILON = 1e-10
 UPDATES_PER_ITER = 5
@@ -97,6 +97,9 @@ class Agent_PPO(Agent):
             while not done:
                 _step += 1
                 ep_t += 1
+                
+                if _step % 10 == 0:
+                    print(_step)
 
                 batch_obs.append(obs)
 
@@ -110,6 +113,8 @@ class Agent_PPO(Agent):
             batch_lens.append(1 + ep_t)
             batch_rews.append(ep_rews)
         
+        print("here")
+
         batch_obs = torch.tensor(batch_obs, dtype=torch.float, device=self.device)
         batch_acts = torch.tensor(batch_acts, dtype=torch.float, device=self.device)
         batch_log_probs = torch.tensor(batch_log_probs, dtype=torch.float, device=self.device)
@@ -133,10 +138,13 @@ class Agent_PPO(Agent):
         return batch_rtgs
 
     def evaluate(self, batch_obs, batch_acts):
-        V = self.critic(batch_obs).squeeze()
+        V = self.critic_net(torch.permute(batch_obs, (0, 3, 1, 2))).squeeze()
 
-        mean = self.actor(batch_obs)
+        mean = self.actor_net(torch.permute(batch_obs, (0, 3, 1, 2)))
         dist = MultivariateNormal(mean, self.cov_mat)
+
+        print(mean.shape, batch_acts.shape)
+
         log_probs = dist.log_prob(batch_acts)
 
         return V, log_probs
@@ -157,6 +165,7 @@ class Agent_PPO(Agent):
 
         _step = 0
         _eps = 0
+
         while _step < TIME_STEPS:
             batch_obs, batch_acts, batch_log_probs, batch_rtgs, batch_lens = self.get_batch()
 
@@ -166,6 +175,11 @@ class Agent_PPO(Agent):
             A = batch_rtgs - V.detach()
 
             A = (A - A.mean()) / (A.std() + EPSILON)
+
+            if _eps % 5 == 0:
+                print("Here")
+                torch.save(self.actor_net, './ppo_actor.pth')
+                torch.save(self.critic_net, './ppo_critic.pth')
 
             _eps += 1
 
@@ -187,10 +201,6 @@ class Agent_PPO(Agent):
                 self.critic_optim.zero_grad()
                 critic_loss.backward()
                 self.critic_optim.step()
-
-            if _eps % 10 == 0:
-                torch.save(self.actor_net.state_dict(), './ppo_actor.pth')
-                torch.save(self.critic_net.state_dict(), './ppo_critic.pth')
             
 
 
