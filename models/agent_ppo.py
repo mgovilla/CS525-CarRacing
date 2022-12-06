@@ -14,6 +14,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 from .agent import Agent
+from .ppo_model import PPO
 
 """
 you can import any package and define any extra function as you need
@@ -42,7 +43,7 @@ class Agent_PPO(Agent):
             ...
         """
 
-        super(Agent_DQN, self).__init__(env)
+        super(Agent_PPO, self).__init__(env)
 
         self.cov_var = torch.full(size=(self.env.action_space.n,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
@@ -52,12 +53,12 @@ class Agent_PPO(Agent):
         self.actor_net = PPO(84, 84, 4, 4, device=self.device)
         self.critic_net = PPO(84, 84, 4, 1, device=self.device)
 
-        self.actor_optim = Adam(self.actor_net.parameters(), lr=LEARNING_RATE)
-        self.critic_optim = Adam(self.critic_net.parameters(), lr=LEARNING_RATE)
+        self.actor_optim = optim.Adam(self.actor_net.parameters(), lr=1e-4)
+        self.critic_optim = optim.Adam(self.critic_net.parameters(), lr=1e-4)
 
 
     def get_action(self, observation):
-        mean = self.actor_net(observation)
+        mean = self.actor_net(torch.tensor(observation, dtype=torch.float))
 
         dist = MultivariateNormal(mean, self.cov_mat)
 
@@ -124,17 +125,6 @@ class Agent_PPO(Agent):
         batch_rtgs = torch.tensor(batch_rtgs, dtype=torch.float, device=self.device)
 
         return batch_rtgs
-
-    def get_action(self, observation):
-        mean = self.actor_net(observation)
-
-        dist = MultivariateNormal(mean, self.cov_mat)
-
-        action = dist.sample()
-
-        log_prob = dist.log_prob(action)
-
-        return action.detach().numpy(), log_prob.detach()
 
     def evaluate(self, batch_obs, batch_acts):
         V = self.critic(batch_obs).squeeze()

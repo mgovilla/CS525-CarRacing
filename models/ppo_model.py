@@ -16,7 +16,7 @@ class PPO(nn.Module):
         In the constructor we instantiate modules and assign them as
         member variables.
         """
-        super(DQN, self).__init__()
+        super(PPO, self).__init__()
         self.device = device
 
         # input arguments
