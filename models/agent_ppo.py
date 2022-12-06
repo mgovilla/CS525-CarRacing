@@ -16,6 +16,8 @@ import torch.optim as optim
 from .agent import Agent
 from .ppo_model import PPO
 
+from torch.distributions import MultivariateNormal
+
 """
 you can import any package and define any extra function as you need
 """
@@ -50,15 +52,19 @@ class Agent_PPO(Agent):
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        self.actor_net = PPO(84, 84, 4, 4, device=self.device)
-        self.critic_net = PPO(84, 84, 4, 1, device=self.device)
+        self.actor_net = PPO(96, 96, 12, self.env.action_space.n, device=self.device)
+        self.critic_net = PPO(96, 96, 12, 1, device=self.device)
+
+        self.actor_net.to(self.device)
+        self.critic_net.to(self.device)
+        self.cov_mat = self.cov_mat.to(self.device)
 
         self.actor_optim = optim.Adam(self.actor_net.parameters(), lr=1e-4)
         self.critic_optim = optim.Adam(self.critic_net.parameters(), lr=1e-4)
 
 
     def get_action(self, observation):
-        mean = self.actor_net(torch.tensor(observation, dtype=torch.float))
+        mean = self.actor_net(torch.tensor([observation.transpose()], dtype=torch.float))
 
         dist = MultivariateNormal(mean, self.cov_mat)
 
@@ -66,7 +72,7 @@ class Agent_PPO(Agent):
 
         log_prob = dist.log_prob(action)
 
-        return action.cpu().detach().numpy(), log_prob.cpu().detach()
+        return np.argmax(action.cpu().detach().numpy()), log_prob.cpu().detach()
 
     def get_batch(self):
         batch_obs = []
@@ -95,7 +101,7 @@ class Agent_PPO(Agent):
                 batch_obs.append(obs)
 
                 action, log_prob = self.get_action(obs)
-                obs, reward, done, _ = self.env.step(action)
+                obs, reward, done, _, _ = self.env.step(action)
 
                 ep_rews.append(reward)
                 batch_acts.append(action)
