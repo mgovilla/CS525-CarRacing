@@ -59,7 +59,13 @@ class Agent_PPO(Agent):
     def get_action(self, observation):
         mean = self.actor_net(observation)
 
-        dist = MultivariateNormal(mean, self.cov_)
+        dist = MultivariateNormal(mean, self.cov_mat)
+
+        action = dist.sample()
+
+        log_prob = dist.log_prob(action)
+
+        return action.cpu().detach().numpy(), log_prob.cpu().detach()
 
     def get_batch(self):
         batch_obs = []
