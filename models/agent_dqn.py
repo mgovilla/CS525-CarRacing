@@ -38,6 +38,7 @@ class Agent_DQN(Agent):
 
         super(Agent_DQN, self).__init__(env)
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.double = True
         if args.test_dqn:
             # you can load your model here
             print('loading trained model')
@@ -46,6 +47,9 @@ class Agent_DQN(Agent):
             self.policy_net = torch.load(f="trained_policy_final.pth", map_location=map_location)
             self.policy_net.device = self.device
             self.policy_net.eval()
+            self.target_net = torch.load(f="trained_policy_final.pth", map_location=map_location)
+            self.target_net.device = self.device
+            self.target_net.eval()
             return
 
         if args.train_from_save:
@@ -79,7 +83,6 @@ class Agent_DQN(Agent):
             self.batch_size = 32
             self.init_random_frames = 2500
 
-        self.double = True
 
         self.target_net = DQN(*env.observation_space.shape,
                               env.action_space.n, device=self.device)
